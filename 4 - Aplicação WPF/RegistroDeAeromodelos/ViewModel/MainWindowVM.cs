@@ -8,7 +8,7 @@ namespace RegistroDeAeromodelos.Windows.MainWindow
 {
     public class MainWindowVM
     {
-        public BaseRepository Repository { get; private set; }
+        public IRepository Repository { get; private set; }
 
         public Fabricante? FabricanteSelecionado { get; set; }
 

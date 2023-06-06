@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using RegistroDeAeromodelos.Model;
 using System;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Threading.Tasks;
 
@@ -8,7 +9,8 @@ using System.Threading.Tasks;
  * Tabelas criadas no Postgres:
  *
  *  CREATE TABLE fabricantes (
- *      nome VARCHAR(32) PRIMARY KEY
+ *      id SERIAL PRIMARY KEY,
+ *      nome VARCHAR(32) UNIQUE NOT NULL
  *  );
  *  
  *  CREATE TABLE aeromodelos (
@@ -22,12 +24,14 @@ using System.Threading.Tasks;
 
 namespace RegistroDeAeromodelos.Data
 {
-    public class PostgresRepository : BaseRepository
+    public class PostgresRepository : IRepository
     {
         private NpgsqlConnection connection;
 
         public PostgresRepository()
         {
+            ListaDeFabricantes = new ObservableCollection<Fabricante>();
+
             connection = new NpgsqlConnection(
                 connectionString: "Server=localhost;Port=5432;User id=postgres;Password=1234;Database=RegistroDeAeromodelosDB");
             connection.Open();
@@ -39,6 +43,7 @@ namespace RegistroDeAeromodelos.Data
         {
             connection.Close();
         }
+        public ObservableCollection<Fabricante> ListaDeFabricantes { get; private set; }
 
         public async Task RecuperarDados()
         {
@@ -71,9 +76,10 @@ namespace RegistroDeAeromodelos.Data
 
             for (int i = 0; i < ListaDeFabricantes.Count; i++)
             {
-                cmd.CommandText = $"SELECT fabricantes.nome, aeromodelos.nome as aeromodelo, envergadura, categoria, fabricante " +
-                                  $"FROM fabricantes INNER JOIN aeromodelos ON fabricantes.nome=aeromodelos.fabricante " +
-                                  $"WHERE fabricantes.nome='{ListaDeFabricantes[i].Nome}'";
+                cmd.CommandText = 
+                    $"SELECT fabricantes.id, fabricantes.nome, aeromodelos.nome as aeromodelo, envergadura, categoria, fabricante " +
+                    $"FROM fabricantes INNER JOIN aeromodelos ON fabricantes.id=aeromodelos.fabricante " +
+                    $"WHERE fabricantes.nome='{ListaDeFabricantes[i].Nome}'";
 
                 using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
@@ -91,17 +97,17 @@ namespace RegistroDeAeromodelos.Data
 
         }
 
-        public override async void AdicionarFabricante(Fabricante fabricante)
+        public async void AdicionarFabricante(Fabricante fabricante)
         {
             using NpgsqlCommand cmd = new NpgsqlCommand();
             cmd.Connection = connection;
-            cmd.CommandText = $"INSERT INTO fabricantes VALUES('{fabricante.Nome}')";
+            cmd.CommandText = $"INSERT INTO fabricantes (nome) VALUES('{fabricante.Nome}')";
             await cmd.ExecuteNonQueryAsync();
 
             ListaDeFabricantes.Add(fabricante);
         }
 
-        public override async void RemoverFabricante(Fabricante fabricante)
+        public async void RemoverFabricante(Fabricante fabricante)
         {
             using NpgsqlCommand cmd = new NpgsqlCommand();
             cmd.Connection = connection;
@@ -111,7 +117,7 @@ namespace RegistroDeAeromodelos.Data
             ListaDeFabricantes.Remove(fabricante);
         }
 
-        public override async void AtualizarFabricante(Fabricante fabricante, Fabricante novoFabricante)
+        public async void AtualizarFabricante(Fabricante fabricante, Fabricante novoFabricante)
         {
             using NpgsqlCommand cmd = new NpgsqlCommand();
             cmd.Connection = connection;
@@ -121,7 +127,7 @@ namespace RegistroDeAeromodelos.Data
             fabricante.AtualizarNome(novoFabricante);
         }
 
-        public override async void AdicionarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
+        public async void AdicionarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
         {
             using NpgsqlCommand cmd = new NpgsqlCommand();
             cmd.Connection = connection;
@@ -130,25 +136,29 @@ namespace RegistroDeAeromodelos.Data
                               $"'{aeromodelo.Nome}', " +
                               $"'{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}', " +
                               $"'{aeromodelo.Categoria}', " +
-                              $"'{fabricante.Nome}'" +
+                              $"(SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')" +
                               $")";
             await cmd.ExecuteNonQueryAsync();
 
             fabricante.AdicionarAeromodelo(aeromodelo);
         }
 
-        public override async void RemoverAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
+        public async void RemoverAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
         {
             using NpgsqlCommand cmd = new NpgsqlCommand();
             cmd.Connection = connection;
-            cmd.CommandText = $"DELETE FROM aeromodelos WHERE nome='{aeromodelo.Nome}' AND fabricante='{fabricante.Nome}'";
+            cmd.CommandText = 
+                $"DELETE FROM aeromodelos " +
+                $"WHERE nome='{aeromodelo.Nome}' AND " +
+                $"envergadura='{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}' AND " +
+                $"fabricante=(SELECT id FROM fabricantes WHERE nome ='{fabricante.Nome}')";
             System.Diagnostics.Debug.WriteLine(cmd.CommandText);
             await cmd.ExecuteNonQueryAsync();
 
             fabricante.RemoverAeromodelo(aeromodelo);
         }
 
-        public override async void AtualizarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo, Aeromodelo novoAeromodelo)
+        public async void AtualizarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo, Aeromodelo novoAeromodelo)
         {
             using NpgsqlCommand cmd = new NpgsqlCommand();
             cmd.Connection = connection;
@@ -159,7 +169,7 @@ namespace RegistroDeAeromodelos.Data
                               $"WHERE " +
                               $"nome='{aeromodelo.Nome}' AND " +
                               $"envergadura='{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}' AND " +
-                              $"fabricante='{fabricante.Nome}'";
+                              $"fabricante=(SELECT id FROM fabricantes WHERE nome='{fabricante.Nome}')";
             await cmd.ExecuteNonQueryAsync();
 
             aeromodelo.Atualizar(novoAeromodelo);

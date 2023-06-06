@@ -1,40 +1,44 @@
 ﻿using RegistroDeAeromodelos.Model;
+using System.Collections.ObjectModel;
 
 namespace RegistroDeAeromodelos.Data
 {
-    public class InMemoryRepository : BaseRepository
+    public class InMemoryRepository : IRepository
     {
+        public ObservableCollection<Fabricante> ListaDeFabricantes { get; private set; }
+        
         public InMemoryRepository()
         {
+            ListaDeFabricantes = new ObservableCollection<Fabricante>();
             InicializarDados();
         }
 
-        public override void AdicionarFabricante(Fabricante fabricante)
+        public void AdicionarFabricante(Fabricante fabricante)
         {
             ListaDeFabricantes.Add(fabricante);
         }
 
-        public override void RemoverFabricante(Fabricante fabricante)
+        public void RemoverFabricante(Fabricante fabricante)
         {
             ListaDeFabricantes.Remove(fabricante);
         }
 
-        public override void AtualizarFabricante(Fabricante fabricante, Fabricante novoFabricante)
+        public void AtualizarFabricante(Fabricante fabricante, Fabricante novoFabricante)
         {
             fabricante.AtualizarNome(novoFabricante);
         }
 
-        public override void AdicionarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
+        public void AdicionarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
         {
             fabricante.AdicionarAeromodelo(aeromodelo);
         }
 
-        public override void RemoverAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
+        public void RemoverAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
         {
             fabricante.RemoverAeromodelo(aeromodelo);
         }
 
-        public override void AtualizarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo, Aeromodelo novoAeromodelo)
+        public void AtualizarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo, Aeromodelo novoAeromodelo)
         {
             aeromodelo.Atualizar(novoAeromodelo);
         }
