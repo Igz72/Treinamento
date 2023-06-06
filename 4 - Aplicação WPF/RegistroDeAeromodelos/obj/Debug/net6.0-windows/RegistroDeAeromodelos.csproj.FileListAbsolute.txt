@@ -23,3 +23,6 @@ C:\Users\isaac.alvarez\Documents\GitHub\Treinamento\4 - Aplicação WPF\Registro
 C:\Users\isaac.alvarez\Documents\GitHub\Treinamento\4 - Aplicação WPF\RegistroDeAeromodelos\obj\Debug\net6.0-windows\View\EditarFabricanteWindow.g.cs
 C:\Users\isaac.alvarez\Documents\GitHub\Treinamento\4 - Aplicação WPF\RegistroDeAeromodelos\obj\Debug\net6.0-windows\View\EditarAeromodeloWindow.baml
 C:\Users\isaac.alvarez\Documents\GitHub\Treinamento\4 - Aplicação WPF\RegistroDeAeromodelos\obj\Debug\net6.0-windows\View\EditarFabricanteWindow.baml
+C:\Users\isaac.alvarez\Documents\GitHub\Treinamento\4 - Aplicação WPF\RegistroDeAeromodelos\bin\Debug\net6.0-windows\Microsoft.Extensions.Logging.Abstractions.dll
+C:\Users\isaac.alvarez\Documents\GitHub\Treinamento\4 - Aplicação WPF\RegistroDeAeromodelos\bin\Debug\net6.0-windows\Npgsql.dll
+C:\Users\isaac.alvarez\Documents\GitHub\Treinamento\4 - Aplicação WPF\RegistroDeAeromodelos\obj\Debug\net6.0-windows\RegistroDeAeromodelos.csproj.CopyComplete
