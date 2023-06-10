@@ -3,7 +3,6 @@ using RegistroDeAeromodelos.Model;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Threading.Tasks;
 
 /*
  * Tabelas criadas no Postgres:
@@ -26,153 +25,323 @@ namespace RegistroDeAeromodelos.Data
 {
     public class PostgresRepository : IRepository
     {
-        private NpgsqlConnection connection;
+        private readonly ObservableCollection<Fabricante> listaDeFabricantes;
+
+        private readonly NpgsqlConnection connection;
+
+        private const string user     = "postgres";
+        private const string password = "1234";
+        private const string host     = "localhost";
+        private const string port     = "5432";
+        private const string database = "RegistroDeAeromodelosDB";
 
         public PostgresRepository()
         {
-            ListaDeFabricantes = new ObservableCollection<Fabricante>();
+            listaDeFabricantes = new ObservableCollection<Fabricante>();
 
-            connection = new NpgsqlConnection(
-                connectionString: "Server=localhost;Port=5432;User id=postgres;Password=1234;Database=RegistroDeAeromodelosDB");
-            connection.Open();
+            const string connectionString = $"User id={user};" +
+                                            $"Password={password};" +
+                                            $"Host={host};" +
+                                            $"Port={port};" +
+                                            $"Database={database}";
 
-            _ = RecuperarDados();
-        }
+            connection = new NpgsqlConnection(connectionString);
 
-        ~PostgresRepository()
-        {
-            connection.Close();
-        }
-        public ObservableCollection<Fabricante> ListaDeFabricantes { get; private set; }
-
-        public async Task RecuperarDados()
-        {
-            Task task1 = RecuperarFabricantes();
-            await task1;
-
-            Task task2 = RecuperarAeromodelos();
-            await task2;
-        }
-
-        private async Task RecuperarFabricantes()
-        {
-            using NpgsqlCommand cmd = new NpgsqlCommand();
-            cmd.Connection = connection;
-            cmd.CommandText = $"SELECT * FROM fabricantes";
-
-            using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            try
             {
-                ListaDeFabricantes.Add(new Fabricante(
-                    nome: reader["nome"] as string
-                ));
+                AtualizarListaDeFabricantes();
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
 
-        private async Task RecuperarAeromodelos()
+        public ObservableCollection<Fabricante> ListaDeFabricantes {
+            get { return listaDeFabricantes; }
+        }
+
+        public void AdicionarFabricante(Fabricante fabricante)
         {
-            using NpgsqlCommand cmd = new NpgsqlCommand();
-            cmd.Connection = connection;
-
-            for (int i = 0; i < ListaDeFabricantes.Count; i++)
+            try
             {
-                cmd.CommandText = 
-                    $"SELECT fabricantes.id, fabricantes.nome, aeromodelos.nome as aeromodelo, envergadura, categoria, fabricante " +
-                    $"FROM fabricantes INNER JOIN aeromodelos ON fabricantes.id=aeromodelos.fabricante " +
-                    $"WHERE fabricantes.nome='{ListaDeFabricantes[i].Nome}'";
+                connection.Open();
 
-                using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+                using NpgsqlCommand command = new NpgsqlCommand();
+                command.Connection = connection;
+                command.CommandText = $"INSERT INTO fabricantes (nome) VALUES('{fabricante.Nome}')";
+
+                command.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connection.Close();
+            }
+
+            try
+            {
+                AtualizarListaDeFabricantes();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public void RemoverFabricante(Fabricante fabricante)
+        {
+            try
+            {
+                connection.Open();
+
+                using NpgsqlCommand command = new NpgsqlCommand();
+                command.Connection = connection;
+                command.CommandText = $"DELETE FROM fabricantes WHERE nome = '{fabricante.Nome}'";
+
+                command.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connection.Close();
+            }
+
+            try
+            {
+                AtualizarListaDeFabricantes();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public void AtualizarFabricante(Fabricante fabricante, Fabricante novoFabricante)
+        {
+            try
+            {
+                connection.Open();
+
+                using NpgsqlCommand command = new NpgsqlCommand();
+                command.Connection = connection;
+                command.CommandText = $"UPDATE fabricantes SET nome = '{novoFabricante.Nome}' WHERE nome = '{fabricante.Nome}'";
+                
+                command.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connection.Close();
+            }
+
+            try
+            {
+                AtualizarListaDeFabricantes();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public void AdicionarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
+        {
+            try
+            {
+                connection.Open();
+
+                using NpgsqlCommand command = new NpgsqlCommand();
+                command.Connection = connection;
+                command.CommandText = "INSERT INTO aeromodelos VALUES(" +
+                                      $"'{aeromodelo.Nome}', " +
+                                      $"'{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}', " +
+                                      $"'{aeromodelo.Categoria}', " +
+                                      $"(SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')" +
+                                      ")";
+
+                command.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connection.Close();
+            }
+
+            try
+            {
+                AtualizarListaDeFabricantes();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public void RemoverAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
+        {
+            try
+            {
+                connection.Open();
+
+                using NpgsqlCommand command = new NpgsqlCommand();
+                command.Connection = connection;
+                command.CommandText = "DELETE FROM aeromodelos " +
+                                      $"WHERE nome = '{aeromodelo.Nome}' AND " +
+                                      $"envergadura = '{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}' AND " +
+                                      $"fabricante = (SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')";
+
+                command.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connection.Close();
+            }
+
+            try
+            {
+                AtualizarListaDeFabricantes();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public void AtualizarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo, Aeromodelo novoAeromodelo)
+        {
+            try
+            {
+                connection.Open();
+
+                using NpgsqlCommand command = new NpgsqlCommand();
+                command.Connection = connection;
+                command.CommandText = "UPDATE aeromodelos SET " +
+                                      $"nome = '{novoAeromodelo.Nome}', " +
+                                      $"envergadura = '{novoAeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}', " +
+                                      $"categoria = '{novoAeromodelo.Categoria}' " +
+                                      $"WHERE " +
+                                      $"nome = '{aeromodelo.Nome}' AND " +
+                                      $"envergadura = '{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}' AND " +
+                                      $"fabricante = (SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')";
+
+                command.ExecuteNonQuery();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connection.Close();
+            }
+
+            try
+            {
+                AtualizarListaDeFabricantes();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        private void AtualizarListaDeFabricantes()
+        {
+            listaDeFabricantes.Clear();
+
+            try
+            {
+                RecuperarFabricantes();
+                RecuperarAeromodelos();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        private void RecuperarFabricantes()
+        {
+            try
+            {
+                connection.Open();
+
+                using NpgsqlCommand command = new NpgsqlCommand();
+                command.Connection = connection;
+                command.CommandText = "SELECT * FROM fabricantes";
+
+                using NpgsqlDataReader dataReader = command.ExecuteReader();
+
+                while (dataReader.Read())
                 {
-                    Aeromodelo.CategoriaDoAeromodelo categoria;
-                    Enum.TryParse(reader["categoria"] as string, out categoria);
-
-                    ListaDeFabricantes[i].AdicionarAeromodelo(new Aeromodelo(
-                        nome: reader["aeromodelo"] as string,
-                        envergadura: Convert.ToDouble(reader["envergadura"]),
-                        categoria: categoria
+                    listaDeFabricantes.Add(new Fabricante(
+                        nome: dataReader.GetString(1)
                     ));
                 }
             }
-
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
 
-        public async void AdicionarFabricante(Fabricante fabricante)
+        private void RecuperarAeromodelos()
         {
-            using NpgsqlCommand cmd = new NpgsqlCommand();
-            cmd.Connection = connection;
-            cmd.CommandText = $"INSERT INTO fabricantes (nome) VALUES('{fabricante.Nome}')";
-            await cmd.ExecuteNonQueryAsync();
+            try
+            {
+                connection.Open();
 
-            ListaDeFabricantes.Add(fabricante);
-        }
+                foreach (Fabricante fabricante in listaDeFabricantes)
+                {
+                    using NpgsqlCommand command = new NpgsqlCommand();
+                    command.Connection = connection;
+                    command.CommandText = "SELECT f.id, f.nome, a.nome, a.envergadura, a.categoria, a.fabricante " +
+                                          "FROM fabricantes f INNER JOIN aeromodelos a ON f.id = a.fabricante " +
+                                          $"WHERE f.nome = '{fabricante.Nome}'";
 
-        public async void RemoverFabricante(Fabricante fabricante)
-        {
-            using NpgsqlCommand cmd = new NpgsqlCommand();
-            cmd.Connection = connection;
-            cmd.CommandText = $"DELETE FROM fabricantes WHERE nome='{fabricante.Nome}'";
-            await cmd.ExecuteNonQueryAsync();
+                    using NpgsqlDataReader dataReader = command.ExecuteReader();
 
-            ListaDeFabricantes.Remove(fabricante);
-        }
+                    while (dataReader.Read())
+                    {
+                        Enum.TryParse(dataReader.GetString(4), out Aeromodelo.CategoriaDoAeromodelo categoria);
 
-        public async void AtualizarFabricante(Fabricante fabricante, Fabricante novoFabricante)
-        {
-            using NpgsqlCommand cmd = new NpgsqlCommand();
-            cmd.Connection = connection;
-            cmd.CommandText = $"UPDATE fabricantes SET nome='{novoFabricante.Nome}' WHERE nome='{fabricante.Nome}'";
-            await cmd.ExecuteNonQueryAsync();
-
-            fabricante.AtualizarNome(novoFabricante);
-        }
-
-        public async void AdicionarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
-        {
-            using NpgsqlCommand cmd = new NpgsqlCommand();
-            cmd.Connection = connection;
-            cmd.CommandText = $"INSERT INTO aeromodelos (nome, envergadura, categoria, fabricante) " +
-                              $"VALUES(" +
-                              $"'{aeromodelo.Nome}', " +
-                              $"'{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}', " +
-                              $"'{aeromodelo.Categoria}', " +
-                              $"(SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')" +
-                              $")";
-            await cmd.ExecuteNonQueryAsync();
-
-            fabricante.AdicionarAeromodelo(aeromodelo);
-        }
-
-        public async void RemoverAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo)
-        {
-            using NpgsqlCommand cmd = new NpgsqlCommand();
-            cmd.Connection = connection;
-            cmd.CommandText = 
-                $"DELETE FROM aeromodelos " +
-                $"WHERE nome='{aeromodelo.Nome}' AND " +
-                $"envergadura='{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}' AND " +
-                $"fabricante=(SELECT id FROM fabricantes WHERE nome ='{fabricante.Nome}')";
-            System.Diagnostics.Debug.WriteLine(cmd.CommandText);
-            await cmd.ExecuteNonQueryAsync();
-
-            fabricante.RemoverAeromodelo(aeromodelo);
-        }
-
-        public async void AtualizarAeromodelo(Fabricante fabricante, Aeromodelo aeromodelo, Aeromodelo novoAeromodelo)
-        {
-            using NpgsqlCommand cmd = new NpgsqlCommand();
-            cmd.Connection = connection;
-            cmd.CommandText = $"UPDATE aeromodelos SET " +
-                              $"nome='{novoAeromodelo.Nome}', " +
-                              $"envergadura='{novoAeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}', " +
-                              $"categoria='{novoAeromodelo.Categoria}' " +
-                              $"WHERE " +
-                              $"nome='{aeromodelo.Nome}' AND " +
-                              $"envergadura='{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}' AND " +
-                              $"fabricante=(SELECT id FROM fabricantes WHERE nome='{fabricante.Nome}')";
-            await cmd.ExecuteNonQueryAsync();
-
-            aeromodelo.Atualizar(novoAeromodelo);
+                        fabricante.AdicionarAeromodelo(new Aeromodelo(
+                            nome: dataReader.GetString(2),
+                            envergadura: dataReader.GetDouble(3),
+                            categoria: categoria
+                        ));
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
     }
 }

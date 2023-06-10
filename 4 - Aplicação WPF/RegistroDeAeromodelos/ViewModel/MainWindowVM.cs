@@ -2,6 +2,8 @@
 using RegistroDeAeromodelos.Model;
 using RegistroDeAeromodelos.View;
 using RegistroDeAeromodelos.ViewModel;
+using System;
+using System.Windows;
 using System.Windows.Input;
 
 namespace RegistroDeAeromodelos.Windows.MainWindow
@@ -23,7 +25,14 @@ namespace RegistroDeAeromodelos.Windows.MainWindow
 
         public MainWindowVM()
         {
-            Repository = new PostgresRepository();
+            try
+            {
+                Repository = new PostgresRepository();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
 
             InicializarComandos();
         }
@@ -41,13 +50,27 @@ namespace RegistroDeAeromodelos.Windows.MainWindow
 
                 if (tela.ShowDialog().Equals(true))
                 {
-                    Repository.AdicionarFabricante(novoFabricante);
+                    try
+                    {
+                        Repository.AdicionarFabricante(novoFabricante);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
                 }
             });
 
             RemoverFabricante = new RelayCommand((object _) =>
             {
-                Repository.RemoverFabricante(FabricanteSelecionado!);
+                try
+                {
+                    Repository.RemoverFabricante(FabricanteSelecionado!);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }, (object _) => (FabricanteSelecionado != null));
 
             AtualizarFabricante = new RelayCommand((object _) =>
@@ -61,7 +84,14 @@ namespace RegistroDeAeromodelos.Windows.MainWindow
 
                 if (tela.ShowDialog().Equals(true))
                 {
-                    Repository.AtualizarFabricante(FabricanteSelecionado, fabricanteTemporario);
+                    try
+                    {
+                        Repository.AtualizarFabricante(FabricanteSelecionado, fabricanteTemporario);
+                    }
+                    catch (Exception ex) 
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
                 }
             },(object _) => FabricanteSelecionado != null);
 
@@ -76,13 +106,27 @@ namespace RegistroDeAeromodelos.Windows.MainWindow
 
                 if (tela.ShowDialog().Equals(true))
                 {
-                    Repository.AdicionarAeromodelo(FabricanteSelecionado!, novoAeromodelo);
+                    try
+                    {
+                        Repository.AdicionarAeromodelo(FabricanteSelecionado!, novoAeromodelo);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
                 }
             }, (object _) => FabricanteSelecionado != null);
 
             RemoverAeromodelo = new RelayCommand((object _) =>
             {
-                Repository.RemoverAeromodelo(FabricanteSelecionado!, AeromodeloSelecionado!);
+                try
+                {
+                    Repository.RemoverAeromodelo(FabricanteSelecionado!, AeromodeloSelecionado!);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             },
             (object _) => FabricanteSelecionado != null && AeromodeloSelecionado != null);
 
@@ -99,7 +143,14 @@ namespace RegistroDeAeromodelos.Windows.MainWindow
 
                     if (tela.ShowDialog().Equals(true))
                     {
-                        Repository.AtualizarAeromodelo(FabricanteSelecionado!, AeromodeloSelecionado, aeromodeloTemporario);
+                        try
+                        {
+                            Repository.AtualizarAeromodelo(FabricanteSelecionado!, AeromodeloSelecionado, aeromodeloTemporario);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message);
+                        }
                     }
                 }
             }, (object _) => AeromodeloSelecionado != null);
