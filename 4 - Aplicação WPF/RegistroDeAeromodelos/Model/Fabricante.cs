@@ -11,21 +11,28 @@ namespace RegistroDeAeromodelos.Model
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public Fabricante(string nome = "") 
+        public Fabricante(string? nome = "") 
         {
+            nome ??= "";
+
             this.nome = nome;
             this.ListaDeAeromodelos = new ObservableCollection<Aeromodelo>();
+        }
+
+        public string? Nome
+        {
+            get { return this.nome; }
+            set
+            {
+                value ??= "";
+                this.nome = value;
+                Notificar(nameof(Nome));
+            }
         }
 
         public Fabricante ShallowCopy()
         {
             return (Fabricante)this.MemberwiseClone();
-        }
-
-        public string Nome
-        {
-            get { return this.nome; }
-            set { this.nome = value; Notificar(nameof(Nome)); }
         }
 
         public void AtualizarNome(Fabricante fabricante)

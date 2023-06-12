@@ -1,5 +1,4 @@
-﻿using Npgsql;
-using RegistroDeAeromodelos.Model;
+﻿using RegistroDeAeromodelos.Model;
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -25,27 +24,15 @@ namespace RegistroDeAeromodelos.Data
 {
     public class PostgresRepository : IRepository
     {
+        private readonly IConexao conexao;
+        
         private readonly ObservableCollection<Fabricante> listaDeFabricantes;
 
-        private readonly NpgsqlConnection connection;
-
-        private const string user     = "postgres";
-        private const string password = "1234";
-        private const string host     = "localhost";
-        private const string port     = "5432";
-        private const string database = "RegistroDeAeromodelosDB";
-
-        public PostgresRepository()
+        public PostgresRepository(IConexao conexao)
         {
+            this.conexao = conexao;
+
             listaDeFabricantes = new ObservableCollection<Fabricante>();
-
-            const string connectionString = $"User id={user};" +
-                                            $"Password={password};" +
-                                            $"Host={host};" +
-                                            $"Port={port};" +
-                                            $"Database={database}";
-
-            connection = new NpgsqlConnection(connectionString);
 
             try
             {
@@ -65,25 +52,8 @@ namespace RegistroDeAeromodelos.Data
         {
             try
             {
-                connection.Open();
-
-                using NpgsqlCommand command = new NpgsqlCommand();
-                command.Connection = connection;
-                command.CommandText = $"INSERT INTO fabricantes (nome) VALUES('{fabricante.Nome}')";
-
-                command.ExecuteNonQuery();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                connection.Close();
-            }
-
-            try
-            {
+                string sql = $"INSERT INTO fabricantes (nome) VALUES('{fabricante.Nome}')";
+                conexao.ExecutarComando(sql);
                 AtualizarListaDeFabricantes();
             }
             catch (Exception)
@@ -96,25 +66,8 @@ namespace RegistroDeAeromodelos.Data
         {
             try
             {
-                connection.Open();
-
-                using NpgsqlCommand command = new NpgsqlCommand();
-                command.Connection = connection;
-                command.CommandText = $"DELETE FROM fabricantes WHERE nome = '{fabricante.Nome}'";
-
-                command.ExecuteNonQuery();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                connection.Close();
-            }
-
-            try
-            {
+                string sql = $"DELETE FROM fabricantes WHERE nome = '{fabricante.Nome}'";
+                conexao.ExecutarComando(sql);
                 AtualizarListaDeFabricantes();
             }
             catch (Exception)
@@ -127,25 +80,8 @@ namespace RegistroDeAeromodelos.Data
         {
             try
             {
-                connection.Open();
-
-                using NpgsqlCommand command = new NpgsqlCommand();
-                command.Connection = connection;
-                command.CommandText = $"UPDATE fabricantes SET nome = '{novoFabricante.Nome}' WHERE nome = '{fabricante.Nome}'";
-                
-                command.ExecuteNonQuery();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                connection.Close();
-            }
-
-            try
-            {
+                string sql = $"UPDATE fabricantes SET nome = '{novoFabricante.Nome}' WHERE nome = '{fabricante.Nome}'";
+                conexao.ExecutarComando(sql);
                 AtualizarListaDeFabricantes();
             }
             catch (Exception)
@@ -158,30 +94,13 @@ namespace RegistroDeAeromodelos.Data
         {
             try
             {
-                connection.Open();
-
-                using NpgsqlCommand command = new NpgsqlCommand();
-                command.Connection = connection;
-                command.CommandText = "INSERT INTO aeromodelos VALUES(" +
-                                      $"'{aeromodelo.Nome}', " +
-                                      $"'{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}', " +
-                                      $"'{aeromodelo.Categoria}', " +
-                                      $"(SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')" +
-                                      ")";
-
-                command.ExecuteNonQuery();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                connection.Close();
-            }
-
-            try
-            {
+                string sql = "INSERT INTO aeromodelos VALUES(" +
+                             $"'{aeromodelo.Nome}', " +
+                             $"{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}, " +
+                             $"'{aeromodelo.Categoria}', " +
+                             $"(SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')" +
+                             ")";
+                conexao.ExecutarComando(sql);
                 AtualizarListaDeFabricantes();
             }
             catch (Exception)
@@ -194,28 +113,11 @@ namespace RegistroDeAeromodelos.Data
         {
             try
             {
-                connection.Open();
-
-                using NpgsqlCommand command = new NpgsqlCommand();
-                command.Connection = connection;
-                command.CommandText = "DELETE FROM aeromodelos " +
-                                      $"WHERE nome = '{aeromodelo.Nome}' AND " +
-                                      $"envergadura = '{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}' AND " +
-                                      $"fabricante = (SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')";
-
-                command.ExecuteNonQuery();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                connection.Close();
-            }
-
-            try
-            {
+                string sql = "DELETE FROM aeromodelos " +
+                             $"WHERE nome = '{aeromodelo.Nome}' AND " +
+                             $"envergadura = {aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)} AND " +
+                             $"fabricante = (SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')";
+                conexao.ExecutarComando(sql);
                 AtualizarListaDeFabricantes();
             }
             catch (Exception)
@@ -228,32 +130,15 @@ namespace RegistroDeAeromodelos.Data
         {
             try
             {
-                connection.Open();
-
-                using NpgsqlCommand command = new NpgsqlCommand();
-                command.Connection = connection;
-                command.CommandText = "UPDATE aeromodelos SET " +
-                                      $"nome = '{novoAeromodelo.Nome}', " +
-                                      $"envergadura = '{novoAeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}', " +
-                                      $"categoria = '{novoAeromodelo.Categoria}' " +
-                                      $"WHERE " +
-                                      $"nome = '{aeromodelo.Nome}' AND " +
-                                      $"envergadura = '{aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}' AND " +
-                                      $"fabricante = (SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')";
-
-                command.ExecuteNonQuery();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                connection.Close();
-            }
-
-            try
-            {
+                string sql = "UPDATE aeromodelos SET " +
+                             $"nome = '{novoAeromodelo.Nome}', " +
+                             $"envergadura = {novoAeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)}, " +
+                             $"categoria = '{novoAeromodelo.Categoria}' " +
+                             $"WHERE " +
+                             $"nome = '{aeromodelo.Nome}' AND " +
+                             $"envergadura = {aeromodelo.Envergadura.ToString(CultureInfo.InvariantCulture)} AND " +
+                             $"fabricante = (SELECT id FROM fabricantes WHERE nome = '{fabricante.Nome}')";
+                conexao.ExecutarComando(sql);
                 AtualizarListaDeFabricantes();
             }
             catch (Exception)
@@ -281,28 +166,27 @@ namespace RegistroDeAeromodelos.Data
         {
             try
             {
-                connection.Open();
+                string sql = "SELECT * FROM fabricantes";
 
-                using NpgsqlCommand command = new NpgsqlCommand();
-                command.Connection = connection;
-                command.CommandText = "SELECT * FROM fabricantes";
-
-                using NpgsqlDataReader dataReader = command.ExecuteReader();
-
-                while (dataReader.Read())
+                conexao.LerTabela(sql, (dataReader) =>
                 {
-                    listaDeFabricantes.Add(new Fabricante(
-                        nome: dataReader.GetString(1)
-                    ));
-                }
+                    if (dataReader.Read())
+                    {
+                        listaDeFabricantes.Add(new Fabricante(
+                            nome: dataReader.GetString(1)
+                        ));
+
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                });
             }
             catch (Exception)
             {
                 throw;
-            }
-            finally
-            {
-                connection.Close();
             }
         }
 
@@ -310,37 +194,36 @@ namespace RegistroDeAeromodelos.Data
         {
             try
             {
-                connection.Open();
-
                 foreach (Fabricante fabricante in listaDeFabricantes)
-                {
-                    using NpgsqlCommand command = new NpgsqlCommand();
-                    command.Connection = connection;
-                    command.CommandText = "SELECT f.id, f.nome, a.nome, a.envergadura, a.categoria, a.fabricante " +
-                                          "FROM fabricantes f INNER JOIN aeromodelos a ON f.id = a.fabricante " +
-                                          $"WHERE f.nome = '{fabricante.Nome}'";
+                { 
+                    string sql = "SELECT f.id, f.nome, a.nome, a.envergadura, a.categoria, a.fabricante " +
+                                 "FROM fabricantes f INNER JOIN aeromodelos a ON f.id = a.fabricante " +
+                                 $"WHERE f.nome = '{fabricante.Nome}'";
 
-                    using NpgsqlDataReader dataReader = command.ExecuteReader();
-
-                    while (dataReader.Read())
+                    conexao.LerTabela(sql, (dataReader) =>
                     {
-                        Enum.TryParse(dataReader.GetString(4), out Aeromodelo.CategoriaDoAeromodelo categoria);
+                        if (dataReader.Read())
+                        {
+                            Enum.TryParse(dataReader.GetString(4), out Aeromodelo.CategoriaDoAeromodelo categoria);
 
-                        fabricante.AdicionarAeromodelo(new Aeromodelo(
-                            nome: dataReader.GetString(2),
-                            envergadura: dataReader.GetDouble(3),
-                            categoria: categoria
-                        ));
-                    }
+                            fabricante.AdicionarAeromodelo(new Aeromodelo(
+                                nome: dataReader.GetString(2),
+                                envergadura: dataReader.GetDouble(3),
+                                categoria: categoria
+                            ));
+
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    });
                 }
             }
             catch (Exception)
             {
                 throw;
-            }
-            finally
-            {
-                connection.Close();
             }
         }
     }

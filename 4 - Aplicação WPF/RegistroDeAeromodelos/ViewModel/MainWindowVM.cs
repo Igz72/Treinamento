@@ -27,7 +27,8 @@ namespace RegistroDeAeromodelos.Windows.MainWindow
         {
             try
             {
-                Repository = new PostgresRepository();
+                ConexaoPostgres conexao = new ConexaoPostgres();
+                Repository = new PostgresRepository(conexao);
             }
             catch (Exception ex)
             {

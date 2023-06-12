@@ -16,22 +16,24 @@ namespace RegistroDeAeromodelos.Model
             this.envergadura = 0;
             this.categoria = CategoriaDoAeromodelo.Outro;
         }
-        public Aeromodelo(string nome, double envergadura, CategoriaDoAeromodelo categoria) 
+        public Aeromodelo(string? nome, double envergadura, CategoriaDoAeromodelo categoria) 
         {
+            nome ??= "";
+
             this.nome = nome;
             this.envergadura = envergadura;
             this.categoria = categoria;
         }
 
-        public Aeromodelo ShallowCopy()
-        {
-            return (Aeromodelo)this.MemberwiseClone();
-        }
-
-        public string Nome
+        public string? Nome
         {
             get { return this.nome; }
-            set { this.nome = value; Notificar(nameof(Nome)); }
+            set
+            {
+                value ??= "";
+                this.nome = value;
+                Notificar(nameof(Nome));
+            }
         }
 
         public double Envergadura
@@ -44,6 +46,11 @@ namespace RegistroDeAeromodelos.Model
         {
             get { return this.categoria; }
             set { this.categoria = value; Notificar(nameof(Categoria)); }
+        }
+
+        public Aeromodelo ShallowCopy()
+        {
+            return (Aeromodelo)this.MemberwiseClone();
         }
 
         public void Atualizar(Aeromodelo aeromodelo)
